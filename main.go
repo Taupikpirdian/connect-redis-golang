@@ -7,6 +7,8 @@ import (
 	"try/connect-redis-golang/domain/repository"
 	"try/connect-redis-golang/mysql_repository"
 	"try/connect-redis-golang/pkg/mysql_connection"
+
+	"github.com/go-redis/redis/v8"
 )
 
 var (
@@ -23,12 +25,14 @@ func NewArticleLogicFactoryHandler(repoArticleImplementation repository.ArticleR
 }
 
 func main() {
-	ctx := context.Background()
+	// ctx := context.Background()
 	// enable when u want save data
 	// insertData(ctx)
 
 	// enable when u want get data
-	selectAllData(ctx)
+	// selectAllData(ctx)
+
+	checkConnectionRedis()
 }
 
 func insertData(ctx context.Context) {
@@ -79,4 +83,28 @@ func selectAllData(ctx context.Context) {
 	for _, dataArticle := range dataCollectionArticle {
 		fmt.Println("Judul : " + dataArticle.GetTitleArtikel() + " Author : " + dataArticle.GetAuthorArtikel())
 	}
+}
+
+func checkConnectionRedis() {
+	fmt.Println("Go Redis Connection Test")
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+
+	ping(client)
+}
+
+// check koneksi
+func ping(client *redis.Client) error {
+	pong, err := client.Ping(client.Context()).Result()
+	if err != nil {
+		return err
+	}
+	fmt.Println(pong, err)
+	// Output: PONG <nil>
+
+	return nil
 }

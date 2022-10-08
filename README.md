@@ -1,3 +1,5 @@
 * WHAT NEW?
-  1. Implement multiple language use slice
-  2. Slice with pointer
+  1. Implement redis
+
+* Install Redis
+  - Go Get github.com/go-redis/redis/v8
