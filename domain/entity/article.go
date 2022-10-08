@@ -112,7 +112,7 @@ func NewCreateArticle(dataCreate DTONewCreateArticle) (*Article, error) {
 
 // func get data
 func FetchDataArticleFromDB(dataDTO DTOArticleFromDatabase) *Article {
-	dataSiswa := &Article{
+	dataArticle := &Article{
 		codeArticle:   dataDTO.CodeArticle,
 		titleOriginal: dataDTO.TitleOriginal,
 		textOriginal:  dataDTO.TextOriginal,
@@ -123,7 +123,7 @@ func FetchDataArticleFromDB(dataDTO DTOArticleFromDatabase) *Article {
 		isHighlight:   dataDTO.IsHighLight,
 	}
 
-	return dataSiswa
+	return dataArticle
 }
 
 // validasi
