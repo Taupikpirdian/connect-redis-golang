@@ -7,6 +7,8 @@ import (
 	"try/connect-redis-golang/domain/repository"
 	"try/connect-redis-golang/mysql_repository"
 	"try/connect-redis-golang/pkg/mysql_connection"
+	"try/connect-redis-golang/pkg/redis_connection"
+	"try/connect-redis-golang/redis_repository"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -14,25 +16,39 @@ import (
 var (
 	connectionDatabase     = mysql_connection.InitMysqlDB()
 	articleRepositoryMysql = mysql_repository.NewArticleRepositoryMysqlInteractor(connectionDatabase)
+	connectionRedis        = redis_connection.InitRedisClient()
+	articleRepositoryRedis = redis_repository.NewRepoArticleRedisInteractor(connectionRedis)
 )
 
+// for wadah kontrak interface
 type ArticleLogicFactoryHandler struct {
 	articleRepository repository.ArticleRepository
 }
 
+// initiate kontrak
 func NewArticleLogicFactoryHandler(repoArticleImplementation repository.ArticleRepository) *ArticleLogicFactoryHandler {
 	return &ArticleLogicFactoryHandler{articleRepository: repoArticleImplementation}
 }
 
+// for wadah kontrak interface
+type ArticleLogicRedisFactoryHandler struct {
+	articleRepository repository.ArticleRedisRepository
+}
+
+// initiate kontrak
+func NewArticleLogicRedisFactoryHandler(repoArticleImplementation repository.ArticleRedisRepository) *ArticleLogicRedisFactoryHandler {
+	return &ArticleLogicRedisFactoryHandler{articleRepository: repoArticleImplementation}
+}
+
 func main() {
-	// ctx := context.Background()
+	ctx := context.Background()
+	checkConnectionRedis()
+
 	// enable when u want save data
-	// insertData(ctx)
+	insertData(ctx)
 
 	// enable when u want get data
-	// selectAllData(ctx)
-
-	checkConnectionRedis()
+	selectAllDataFromRedis(ctx)
 }
 
 func insertData(ctx context.Context) {
@@ -71,6 +87,14 @@ func insertData(ctx context.Context) {
 		fmt.Println("GAGAL CREATE ARTICLE ADA KESALAHAN DALAM PENYIMPANAN")
 		panic(errStoreRepo)
 	}
+
+	// store to redis
+	handlerRepoRedis := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
+	errStoreRepoRedis := handlerRepoRedis.articleRepository.StoreOrUpdateData(ctx, FirstArticle)
+	if errStoreRepoRedis != nil {
+		fmt.Println("GAGAL CREATE ARTICLE TO REDIS ADA KESALAHAN DALAM PENYIMPANAN KE REDIS")
+		panic(errStoreRepoRedis)
+	}
 }
 
 func selectAllData(ctx context.Context) {
@@ -81,7 +105,26 @@ func selectAllData(ctx context.Context) {
 	}
 
 	for _, dataArticle := range dataCollectionArticle {
-		fmt.Println("Judul : " + dataArticle.GetTitleArtikel() + " Author : " + dataArticle.GetAuthorArtikel())
+		fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
+	}
+}
+
+func selectAllDataFromRedis(ctx context.Context) {
+	handlerRepo := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
+	result, errGetData := handlerRepo.articleRepository.GetAttributeArticleByKode(ctx, "XXX")
+	if errGetData != nil {
+		panic(errGetData)
+	}
+
+	if result == nil {
+		fmt.Println("... Get Data From DB and Set To Redis")
+		selectAllData(ctx)
+	} else {
+		fmt.Println("... Get Data From Redis")
+
+		// for _, dataArticle := range dataCollectionArticle {
+		// 	fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
+		// }
 	}
 }
 
@@ -94,7 +137,12 @@ func checkConnectionRedis() {
 		DB:       0,
 	})
 
-	ping(client)
+	result := ping(client)
+	if result == nil {
+		fmt.Println("Redis Connected")
+	} else {
+		fmt.Println("Redis Not Connected")
+	}
 }
 
 // check koneksi

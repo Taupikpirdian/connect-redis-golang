@@ -1,14 +1,10 @@
-package redis
+package redis_connection
 
 import (
-	"fmt"
-
 	"github.com/go-redis/redis/v8"
 )
 
 func InitRedisClient() *redis.Client {
-	fmt.Println("Go Redis Connection Test")
-
 	var (
 		opts *redis.Options
 	)

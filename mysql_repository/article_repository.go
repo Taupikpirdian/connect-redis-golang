@@ -3,7 +3,6 @@ package mysql_repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 	"try/connect-redis-golang/domain/entity"
 	"try/connect-redis-golang/domain/repository"
@@ -69,8 +68,6 @@ func (repo *ArticleRepositoryMysqlInteractor) GetAllData(ctx context.Context) ([
 	if errMysql != nil {
 		return nil, errMysql
 	}
-
-	fmt.Println(rows)
 
 	dataArticleCollection := make([]*entity.Article, 0)
 	for rows.Next() {
