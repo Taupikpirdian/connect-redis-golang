@@ -18,19 +18,17 @@ func NewRepoArticleRedisInteractor(Conn *redis.Client) *RepoArticleRedis {
 }
 
 func (repo *RepoArticleRedis) GetAttributeArticleByKode(ctx context.Context, kodeArticle string) (*entity.Article, error) {
-	/*
-		CLI Redis:
-		HGET "XXXX-25524000" "data_article"
-	*/
-
 	var (
 		checkErr error
 	)
 
+	/*
+		CLI Redis:
+		HGET "XXXX-25524000" "data_article"
+	*/
 	data, checkErr := repo.Conn.HGet(ctx, kodeArticle, mapper.MapGetRedisField()).Result()
 	if checkErr == redis.Nil {
 		fmt.Println("Redis is Empty")
-		// return nil, checkErr // kenapa ketika return error, dia malah error
 		return nil, nil
 	}
 
@@ -44,6 +42,9 @@ func (repo *RepoArticleRedis) GetAttributeArticleByKode(ctx context.Context, kod
 }
 
 func (repo *RepoArticleRedis) GetAllData(ctx context.Context) (*entity.Article, error) {
+	/*
+		func ini sementara blm digunakan, karena blm nemu cara get ALL data di redis by field
+	*/
 	var (
 		checkErr error
 	)
@@ -51,7 +52,6 @@ func (repo *RepoArticleRedis) GetAllData(ctx context.Context) (*entity.Article, 
 	data, checkErr := repo.Conn.HGetAll(ctx, mapper.MapGetRedisField()).Result()
 	if len(data) == 0 || checkErr == redis.Nil {
 		fmt.Println("Redis is Empty")
-		// return nil, checkErr // kenapa ketika return error, dia malah error
 		return nil, nil
 	}
 

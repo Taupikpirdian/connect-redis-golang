@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 	"try/connect-redis-golang/domain/entity"
 	"try/connect-redis-golang/domain/repository"
@@ -121,7 +122,7 @@ func (repo *ArticleRepositoryMysqlInteractor) GetDataByCode(ctx context.Context,
 		return nil, errMysql
 	}
 
-	for rows.Next() {
+	if rows.Next() {
 		var (
 			id             int
 			code_article   string
@@ -133,7 +134,7 @@ func (repo *ArticleRepositoryMysqlInteractor) GetDataByCode(ctx context.Context,
 			thumbs         string
 			is_highlight   bool
 		)
-
+		// first row
 		err := rows.Scan(&id, &code_article, &title_original, &text_original, &date, &banner, &author, &thumbs, &is_highlight)
 		if err != nil {
 			return nil, err
@@ -144,9 +145,10 @@ func (repo *ArticleRepositoryMysqlInteractor) GetDataByCode(ctx context.Context,
 			return nil, errors.New("gagal mapping data redis")
 		}
 
-		// ini gmna supaya tidak loop
 		return dataArticle, nil
-	}
-	return nil, nil
 
+	} else {
+		fmt.Println("... GAGAL Data Tidak Ditemukan, dengan code artikel: " + codeArticle)
+		return nil, nil
+	}
 }

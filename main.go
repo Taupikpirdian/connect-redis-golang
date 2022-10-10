@@ -51,9 +51,8 @@ func main() {
 	/*
 		func insertData(ctx) is a ...
 		proses save data to DB and Redis
-		remove comment when u want to active this func
 	*/
-	insertData(ctx)
+	dataCreate := insertData(ctx)
 
 	/*
 		func selectAllDataFromRedis(ctx) is a ...
@@ -66,12 +65,11 @@ func main() {
 	/*
 		func selectDataFromRedisByCode(ctx, code_article string) is a ...
 		proses get first data from Redis by code article
-		remove comment when u want to active this func
 	*/
-	selectDataFromRedisByCode(ctx, "XXXX-20476832")
+	selectDataFromRedisByCode(ctx, dataCreate.GetCodeArtikel())
 }
 
-func insertData(ctx context.Context) {
+func insertData(ctx context.Context) *entity.Article {
 	CreateFirstArticle := entity.DTONewCreateArticle{
 		TitleOriginal: "Apa itu Lorem Ipsum?",
 		TextOriginal:  "Lorem Ipsum hanyalah teks tiruan dari industri percetakan dan penyusunan huruf. Lorem Ipsum telah menjadi teks dummy standar industri sejak tahun 1500-an, ketika seorang pencetak yang tidak dikenal mengambil sekumpulan tipe dan mengacaknya untuk membuat buku spesimen tipe. Ini telah bertahan tidak hanya lima abad, tetapi juga lompatan ke pengaturan huruf elektronik, pada dasarnya tetap tidak berubah. Itu dipopulerkan pada 1960-an dengan merilis lembar Letraset yang berisi bagian-bagian Lorem Ipsum, dan baru-baru ini dengan perangkat lunak penerbitan desktop seperti Aldus PageMaker termasuk versi Lorem Ipsum.",
@@ -118,18 +116,8 @@ func insertData(ctx context.Context) {
 		panic(errStoreRepoRedis)
 	}
 	fmt.Println("... Success Store Data To Redis")
-}
 
-func selectAllData(ctx context.Context) {
-	handlerRepo := NewArticleLogicFactoryHandler(articleRepositoryMysql)
-	dataCollectionArticle, errGetData := handlerRepo.articleRepository.GetAllData(ctx)
-	if errGetData != nil {
-		panic(errGetData)
-	}
-
-	for _, dataArticle := range dataCollectionArticle {
-		fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
-	}
+	return FirstArticle
 }
 
 func selectDataByCode(ctx context.Context, codeArticle string) (*entity.Article, error) {
@@ -139,7 +127,10 @@ func selectDataByCode(ctx context.Context, codeArticle string) (*entity.Article,
 		panic(errGetData)
 	}
 
-	fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
+	if dataArticle != nil {
+		fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
+	}
+
 	return dataArticle, errGetData
 }
 
@@ -152,6 +143,39 @@ func setDataToRedisByCode(ctx context.Context, result *entity.Article) {
 		panic(errStoreRepoRedis)
 	} else {
 		fmt.Println("... Success Store Single Data TO Redis")
+	}
+}
+
+func selectDataFromRedisByCode(ctx context.Context, codeArticle string) {
+	fmt.Println("=> => => Process Select Data From Redis")
+	handlerRepo := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
+	result, errGetData := handlerRepo.articleRepository.GetAttributeArticleByKode(ctx, codeArticle)
+	if errGetData != nil {
+		panic(errGetData)
+	}
+
+	if result == nil {
+		fmt.Println("=> => => Process Get Single Data From DB with Code: " + codeArticle)
+		resultGetDb, _ := selectDataByCode(ctx, codeArticle)
+		if resultGetDb != nil {
+			fmt.Println("... Set Single Data To Redis with Code: " + codeArticle)
+			setDataToRedisByCode(ctx, resultGetDb)
+		}
+	} else {
+		fmt.Println("... Success Get Single Data From Redis with Code: " + codeArticle)
+		fmt.Println("Kode : " + result.GetCodeArtikel() + ", Judul : " + result.GetTitleArtikel() + ", Author : " + result.GetAuthorArtikel())
+	}
+}
+
+func selectAllData(ctx context.Context) {
+	handlerRepo := NewArticleLogicFactoryHandler(articleRepositoryMysql)
+	dataCollectionArticle, errGetData := handlerRepo.articleRepository.GetAllData(ctx)
+	if errGetData != nil {
+		panic(errGetData)
+	}
+
+	for _, dataArticle := range dataCollectionArticle {
+		fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
 	}
 }
 
@@ -171,26 +195,6 @@ func selectAllDataFromRedis(ctx context.Context) {
 		// for _, dataArticle := range dataCollectionArticle {
 		// 	fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
 		// }
-	}
-}
-
-func selectDataFromRedisByCode(ctx context.Context, codeArticle string) {
-	fmt.Println("=> => => Process Select Data From Redis")
-	handlerRepo := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
-	result, errGetData := handlerRepo.articleRepository.GetAttributeArticleByKode(ctx, codeArticle)
-	if errGetData != nil {
-		panic(errGetData)
-	}
-
-	if result == nil {
-		fmt.Println("... Success Get Single Data From DB with Code: " + codeArticle)
-		resultGetDb, _ := selectDataByCode(ctx, codeArticle)
-
-		fmt.Println("... Set Single Data To Redis with Code: " + codeArticle)
-		setDataToRedisByCode(ctx, resultGetDb)
-	} else {
-		fmt.Println("... Success Get Single Data From Redis with Code: " + codeArticle)
-		fmt.Println("Kode : " + result.GetCodeArtikel() + ", Judul : " + result.GetTitleArtikel() + ", Author : " + result.GetAuthorArtikel())
 	}
 }
 
