@@ -66,7 +66,11 @@ func main() {
 		func selectDataFromRedisByCode(ctx, code_article string) is a ...
 		proses get first data from Redis by code article
 	*/
-	selectDataFromRedisByCode(ctx, dataCreate.GetCodeArtikel())
+	if dataCreate != nil {
+		selectDataFromRedisByCode(ctx, dataCreate.GetCodeArtikel())
+		// if you want to enter the param code manually, open the code below, and close the code above
+		// selectDataFromRedisByCode(ctx, "XXXX-16223546")
+	}
 }
 
 func insertData(ctx context.Context) *entity.Article {
