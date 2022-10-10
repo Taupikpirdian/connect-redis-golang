@@ -3,6 +3,7 @@ package mysql_repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 	"try/connect-redis-golang/domain/entity"
 	"try/connect-redis-golang/domain/repository"
@@ -104,4 +105,48 @@ func (repo *ArticleRepositoryMysqlInteractor) GetAllData(ctx context.Context) ([
 	defer rows.Close()
 
 	return dataArticleCollection, nil
+}
+
+func (repo *ArticleRepositoryMysqlInteractor) GetDataByCode(ctx context.Context, codeArticle string) (*entity.Article, error) {
+	var (
+		errMysql error
+	)
+
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	sqlQuery := "SELECT * FROM article where code_article = ?"
+	rows, errMysql := repo.dbConn.QueryContext(ctx, sqlQuery, codeArticle)
+	if errMysql != nil {
+		return nil, errMysql
+	}
+
+	for rows.Next() {
+		var (
+			id             int
+			code_article   string
+			title_original string
+			text_original  string
+			date           time.Time
+			banner         string
+			author         string
+			thumbs         string
+			is_highlight   bool
+		)
+
+		err := rows.Scan(&id, &code_article, &title_original, &text_original, &date, &banner, &author, &thumbs, &is_highlight)
+		if err != nil {
+			return nil, err
+		}
+
+		dataArticle, err := entity.NewCreateArticleSingle(code_article, title_original, text_original, date, banner, author, thumbs, is_highlight)
+		if err != nil {
+			return nil, errors.New("gagal mapping data redis")
+		}
+
+		// ini gmna supaya tidak loop
+		return dataArticle, nil
+	}
+	return nil, nil
+
 }

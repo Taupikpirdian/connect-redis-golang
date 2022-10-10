@@ -18,13 +18,37 @@ func NewRepoArticleRedisInteractor(Conn *redis.Client) *RepoArticleRedis {
 }
 
 func (repo *RepoArticleRedis) GetAttributeArticleByKode(ctx context.Context, kodeArticle string) (*entity.Article, error) {
+	/*
+		CLI Redis:
+		HGET "XXXX-25524000" "data_article"
+	*/
+
 	var (
 		checkErr error
 	)
 
-	// data, checkErr = repo.Conn.HGet(ctx, kodeArticle, mapper.MapGetRedisField()).Result()
-	data, checkErr := repo.Conn.HGetAll(ctx, mapper.MapGetRedisField()).Result()
+	data, checkErr := repo.Conn.HGet(ctx, kodeArticle, mapper.MapGetRedisField()).Result()
+	if checkErr == redis.Nil {
+		fmt.Println("Redis is Empty")
+		// return nil, checkErr // kenapa ketika return error, dia malah error
+		return nil, nil
+	}
 
+	fmt.Println("... Yeah found single data in Redis")
+	dataArticle, err := mapper.MapFromJsonStringToDomainArticle(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return dataArticle, nil
+}
+
+func (repo *RepoArticleRedis) GetAllData(ctx context.Context) (*entity.Article, error) {
+	var (
+		checkErr error
+	)
+
+	data, checkErr := repo.Conn.HGetAll(ctx, mapper.MapGetRedisField()).Result()
 	if len(data) == 0 || checkErr == redis.Nil {
 		fmt.Println("Redis is Empty")
 		// return nil, checkErr // kenapa ketika return error, dia malah error
@@ -41,12 +65,9 @@ func (repo *RepoArticleRedis) GetAttributeArticleByKode(ctx context.Context, kod
 }
 
 func (repo *RepoArticleRedis) StoreOrUpdateData(ctx context.Context, data *entity.Article) error {
-	/*
-		CLI Redis:
-		HGET "XXXX-25524000" "data_article"
-	*/
-	fmt.Println("... Store Data To Redis")
+	fmt.Println("=> => => Process Store Data To Redis")
 	_, err := repo.Conn.HSet(ctx, mapper.MapGetKeyValueRedis(data), mapper.MapGetRedisField(), mapper.MapSetBukuToString(data)).Result()
+
 	if err != nil {
 		return err
 	}

@@ -8,9 +8,11 @@ import (
 type ArticleRepository interface {
 	Store(ctx context.Context, dataArticle *entity.Article) error
 	GetAllData(ctx context.Context) ([]*entity.Article, error)
+	GetDataByCode(ctx context.Context, codeArticle string) (*entity.Article, error)
 }
 
 type ArticleRedisRepository interface {
 	GetAttributeArticleByKode(ctx context.Context, codeArticle string) (*entity.Article, error)
 	StoreOrUpdateData(ctx context.Context, dataArticle *entity.Article) error
+	GetAllData(ctx context.Context) (*entity.Article, error)
 }

@@ -42,13 +42,33 @@ func NewArticleLogicRedisFactoryHandler(repoArticleImplementation repository.Art
 
 func main() {
 	ctx := context.Background()
+	/*
+		func checkConnectionRedis() is a ...
+		proses check connection from Redis
+	*/
 	checkConnectionRedis()
 
-	// enable when u want save data
+	/*
+		func insertData(ctx) is a ...
+		proses save data to DB and Redis
+		remove comment when u want to active this func
+	*/
 	insertData(ctx)
 
-	// enable when u want get data
-	selectAllDataFromRedis(ctx)
+	/*
+		func selectAllDataFromRedis(ctx) is a ...
+		proses get all data from DB or Redis
+		but now this func have a bug, proses fixing
+		remove comment when u want to active this func
+	*/
+	// selectAllDataFromRedis(ctx)
+
+	/*
+		func selectDataFromRedisByCode(ctx, code_article string) is a ...
+		proses get first data from Redis by code article
+		remove comment when u want to active this func
+	*/
+	selectDataFromRedisByCode(ctx, "XXXX-20476832")
 }
 
 func insertData(ctx context.Context) {
@@ -81,12 +101,14 @@ func insertData(ctx context.Context) {
 
 	}
 
+	fmt.Println("=> => => Process Store Data To DB")
 	handlerRepo := NewArticleLogicFactoryHandler(articleRepositoryMysql)
 	errStoreRepo := handlerRepo.articleRepository.Store(ctx, FirstArticle)
 	if errStoreRepo != nil {
 		fmt.Println("GAGAL CREATE ARTICLE ADA KESALAHAN DALAM PENYIMPANAN")
 		panic(errStoreRepo)
 	}
+	fmt.Println("... Success Store Data To DB")
 
 	// store to redis
 	handlerRepoRedis := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
@@ -95,6 +117,7 @@ func insertData(ctx context.Context) {
 		fmt.Println("GAGAL CREATE ARTICLE TO REDIS ADA KESALAHAN DALAM PENYIMPANAN KE REDIS")
 		panic(errStoreRepoRedis)
 	}
+	fmt.Println("... Success Store Data To Redis")
 }
 
 func selectAllData(ctx context.Context) {
@@ -106,6 +129,29 @@ func selectAllData(ctx context.Context) {
 
 	for _, dataArticle := range dataCollectionArticle {
 		fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
+	}
+}
+
+func selectDataByCode(ctx context.Context, codeArticle string) (*entity.Article, error) {
+	handlerRepo := NewArticleLogicFactoryHandler(articleRepositoryMysql)
+	dataArticle, errGetData := handlerRepo.articleRepository.GetDataByCode(ctx, codeArticle)
+	if errGetData != nil {
+		panic(errGetData)
+	}
+
+	fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
+	return dataArticle, errGetData
+}
+
+func setDataToRedisByCode(ctx context.Context, result *entity.Article) {
+	// store to redis
+	handlerRepoRedis := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
+	errStoreRepoRedis := handlerRepoRedis.articleRepository.StoreOrUpdateData(ctx, result)
+	if errStoreRepoRedis != nil {
+		fmt.Println("GAGAL CREATE ARTICLE TO REDIS ADA KESALAHAN DALAM PENYIMPANAN KE REDIS")
+		panic(errStoreRepoRedis)
+	} else {
+		fmt.Println("... Success Store Single Data TO Redis")
 	}
 }
 
@@ -125,6 +171,26 @@ func selectAllDataFromRedis(ctx context.Context) {
 		// for _, dataArticle := range dataCollectionArticle {
 		// 	fmt.Println("Kode : " + dataArticle.GetCodeArtikel() + ", Judul : " + dataArticle.GetTitleArtikel() + ", Author : " + dataArticle.GetAuthorArtikel())
 		// }
+	}
+}
+
+func selectDataFromRedisByCode(ctx context.Context, codeArticle string) {
+	fmt.Println("=> => => Process Select Data From Redis")
+	handlerRepo := NewArticleLogicRedisFactoryHandler(articleRepositoryRedis)
+	result, errGetData := handlerRepo.articleRepository.GetAttributeArticleByKode(ctx, codeArticle)
+	if errGetData != nil {
+		panic(errGetData)
+	}
+
+	if result == nil {
+		fmt.Println("... Success Get Single Data From DB with Code: " + codeArticle)
+		resultGetDb, _ := selectDataByCode(ctx, codeArticle)
+
+		fmt.Println("... Set Single Data To Redis with Code: " + codeArticle)
+		setDataToRedisByCode(ctx, resultGetDb)
+	} else {
+		fmt.Println("... Success Get Single Data From Redis with Code: " + codeArticle)
+		fmt.Println("Kode : " + result.GetCodeArtikel() + ", Judul : " + result.GetTitleArtikel() + ", Author : " + result.GetAuthorArtikel())
 	}
 }
 

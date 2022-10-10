@@ -110,6 +110,21 @@ func NewCreateArticle(dataCreate DTONewCreateArticle) (*Article, error) {
 	return dataArticle, nil
 }
 
+func NewCreateArticleSingle(code_article string, title_original string, text_original string, date time.Time, banner string, author string, thumbs string, is_high_light bool) (*Article, error) {
+	dataArticle := &Article{
+		codeArticle:   code_article,
+		titleOriginal: title_original,
+		textOriginal:  text_original,
+		date:          date,
+		banner:        banner,
+		author:        author,
+		thumbs:        thumbs,
+		isHighlight:   is_high_light,
+	}
+
+	return dataArticle, nil
+}
+
 // func get data
 func FetchDataArticleFromDB(dataDTO DTOArticleFromDatabase) *Article {
 	dataArticle := &Article{
